@@ -35,8 +35,8 @@ app.service('lrsData', ['$rootScope','$http','$interval', function($rootScope,$h
 			if(data.more){
 				$http({
 					'method': 'GET',
-					'url': 'https://lrs.adlnet.gov'+data.more,
-					'headers': { 'X-Experience-API-Version': '1.0.1', 'Authorization':  'Basic dG9tOjEyMzQ='}
+					'url': 'http://localhost:8080'+data.more,
+					'headers': { 'X-Experience-API-Version': '1.0.1', 'Authorization':  'Basic b3BlbmxyczpvcGVubHJz'}
 				})
 				.success(success).error(failure);
 			}
@@ -49,8 +49,8 @@ app.service('lrsData', ['$rootScope','$http','$interval', function($rootScope,$h
 
 		$http({
 			'method':'GET',
-			'url': 'https://lrs.adlnet.gov/xAPI/statements',
-			'headers': { 'X-Experience-API-Version': '1.0.1', 'Authorization':  'Basic dG9tOjEyMzQ=' },
+			'url': 'http://localhost:8080/xAPI/statements',
+			'headers': { 'X-Experience-API-Version': '1.0.1', 'Authorization':  'Basic b3BlbmxyczpvcGVubHJz' },
 			'params': {
 				'since': self.lastUpdate.toISOString()
 			}
@@ -91,7 +91,7 @@ app.controller('ListsCtrl', ['$scope','$filter','lrsData', function($scope,$filt
 				return data
 					.where('actor.name != null')
 					.groupBy('actor.name')
-					.orderBy('data.0.timestamp', 'desc')
+					//.orderBy('data.0.timestamp', 'desc')
 					.count()
 					.select('group as name, count as value, data.0.timestamp as date');
 			}
@@ -107,7 +107,7 @@ app.controller('ListsCtrl', ['$scope','$filter','lrsData', function($scope,$filt
 				var filter = '';
 				return data
 					.groupBy('verb.display.en-US')
-					.orderBy('data.0.timestamp', 'desc')
+					//.orderBy('data.0.timestamp', 'desc')
 					.count()
 					.select('group as name, count as value, data.0.timestamp as date');
 			}
