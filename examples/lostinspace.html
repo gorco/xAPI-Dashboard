@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <!-- Graphs -->
+    <link rel='stylesheet' href='../lib/nv.d3.css'/>
+    <script type="text/javascript" src="../lib/d3.v3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../lib/nv.d3.js"></script>
+    <script type="text/javascript" src="../lib/xapiwrapper.min.js"></script>
+    <script type="text/javascript" src="../src/chart.js"></script>
+    <script type="text/javascript" src="../src/dashboard.js"></script>
+    <script type="text/javascript" src="../src/xapicollection.js"></script>
+    <style>
+        h2 {
+            text-align: center;
+        }
+
+        #graphContainer {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .container {
+            width: 500px;
+            height: 300px;
+            overflow: hidden;
+        }
+    </style>
+
+</head>
+<body>
+<div id='graphContainer'>
+    <div id='verbs' class='container'>
+        <h2 id='headerVerbs'></h2>
+        <svg></svg>
+    </div>
+    <div id='lrsActivity' class='container'>
+        <h2 id='headerLrs'></h2>
+        <svg></svg>
+    </div>
+    <div id='actorActivity' class='container'>
+        <h2 id='headerActor'></h2>
+        <svg></svg>
+    </div>
+    <div id='actorActivity2' class='container'>
+        <h2 id='headerActor2'></h2>
+        <svg></svg>
+    </div>
+</div>
+<script>
+
+    var wrapper = ADL.XAPIWrapper;
+    var dash = new ADL.XAPIDashboard();
+    wrapper.changeConfig({
+        'endpoint': 'http://localhost:8080/xAPI/',
+        'auth': 'Basic b3BlbmxyczpvcGVubHJz'
+    });
+
+    var cutoff = new Date(Date.now());
+    cutoff = new Date(cutoff.getFullYear(), cutoff.getMonth(), cutoff.getDate() - 30);
+    cutoff = cutoff.toISOString();
+
+    dash.fetchAllStatements({since: cutoff}, wrapper, function () {
+
+        // label for first graph
+        var header = document.querySelector('#headerVerbs');
+        header.innerHTML = 'Verb Popularity Over Last 30 Days';
+
+        // create first graph
+        var verbsChart = dash.createBarChart({
+            container: '#verbs svg',
+            groupBy: 'verb.id',
+            aggregate: ADL.count(),
+            post: function (data) {
+                data.orderBy('out', 'descending').slice(0, 10);
+            },
+            customize: function (nvd3chart) {
+                nvd3chart.margin({bottom: 150, right: 50});
+                nvd3chart.xAxis.rotateLabels(45);
+                nvd3chart.xAxis.tickFormat(function (label) {
+                    //var parts = /https?:\/\/.*?(\w+\.\w{2,3}).*(\/.+)$/.exec(label);
+                    //return parts.slice(1,3).join('');
+                    return /[^\/]+$/.exec(label)[0];
+                });
+            }
+        });
+
+        // draw first graph once it's configured
+        verbsChart.draw();
+
+
+        // label for second graph
+        header = document.querySelector('#headerLrs');
+        header.innerHTML = 'LRS Activity Over Last 30 Days';
+
+        // create second graph
+        var activityChart = dash.createLineChart({
+            container: '#lrsActivity svg',
+            groupBy: 'stored',
+            range: {
+                start: cutoff,
+                end: (new Date(Date.now())).toISOString(),
+                increment: 1000 * 3600 * 24
+            },
+            rangeLabel: 'start',
+            aggregate: ADL.count(),
+            post: function (data) {
+                data.contents.map(function (el) {
+                    el.in = Date.parse(el.in);
+                });
+            },
+            customize: function (nvd3chart) {
+                nvd3chart.xAxis.tickFormat(function (label) {
+                    return d3.time.format('%b %d')(new Date(label));
+                });
+            }
+        });
+        activityChart.draw();
+
+    });
+
+    var dash2 = new ADL.XAPIDashboard();
+    dash2.fetchAllStatements({
+        since: cutoff,
+        activity: 'http://example.com/games/lostinspace/changed_score'
+    }, wrapper, function () {
+
+        // label for third graph
+        header = document.querySelector('#headerActor');
+        header.innerHTML = 'Top ten user scores';
+
+        var actorChart = dash2.createBarChart({
+            container: '#actorActivity svg',
+            groupBy: 'actor.name',
+            aggregate: ADL.max('object.definition.extensions.value'),
+            post: function (data) {
+                data.orderBy('out', 'descending').slice(0, 10);
+            },
+            customize: function (nvd3chart) {
+                //nvd3chart.xAxis.rotateLabels(45);
+                /*nvd3chart.xAxis.tickFormat(function(label){
+                 return label.slice(7);
+                 });*/
+                nvd3chart.margin({right: 80, bottom: 150});
+            }
+        });
+        actorChart.draw();
+
+    });
+
+
+    var dash3 = new ADL.XAPIDashboard();
+    dash3.fetchAllStatements({
+        since: cutoff,
+        activity: 'http://example.com/games/lostinspace/entered'
+    }, wrapper, function () {
+
+        // label for third graph
+        header = document.querySelector('#headerActor2');
+        header.innerHTML = 'Top ten user progress';
+
+        var actorChart = dash3.createLineChart({
+            container: '#actorActivity2 svg',
+            groupBy: 'actor.name',
+            aggregate: ADL.select('object.definition.extensions.value'),
+            /*post: function (data) {
+                data.orderBy('out', 'descending').slice(0, 10);
+            },*/
+            customize: function (nvd3chart) {
+                //nvd3chart.xAxis.rotateLabels(45);
+                /*nvd3chart.xAxis.tickFormat(function(label){
+                 return label.slice(7);
+                 });*/
+                nvd3chart.margin({right: 80, bottom: 150});
+            }
+        });
+        actorChart.draw();
+
+    });
+</script>
+
+</body>
+</html>
